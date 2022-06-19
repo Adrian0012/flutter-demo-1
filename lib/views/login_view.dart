@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'dart:developer' as logger show log;
-
 import 'package:noteit/constants/routes.dart';
+import 'utilities/show_error_dialog.dart';
+import 'dart:developer' as logger show log;
 
 class LoginView extends StatefulWidget {
   const LoginView({Key? key}) : super(key: key);
@@ -56,16 +56,42 @@ class _LoginViewState extends State<LoginView> {
                   email: email,
                   password: password,
                 );
-                Navigator.of(context).pushNamedAndRemoveUntil(
-                  notesRoute,
-                  (route) => false,
-                );
+                final user = FirebaseAuth.instance.currentUser;
+                if (user?.emailVerified ?? false) {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    notesRoute,
+                    (route) => false,
+                  );
+                } else {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    verifyEmailRoute,
+                    (route) => false,
+                  );
+                }
               } on FirebaseAuthException catch (e) {
                 if (e.code == 'user-not-found') {
-                  logger.log(e.code.toString());
+                  await showErrorDialog(
+                    context,
+                    'Invalid Credentials.',
+                  );
                 } else if (e.code == 'wrong-password') {
+                  await showErrorDialog(
+                    context,
+                    'Invalid Credentials.',
+                  );
+                } else {
+                  await showErrorDialog(
+                    context,
+                    'Auth Error. Please contact support.',
+                  );
                   logger.log(e.code.toString());
                 }
+              } catch (e) {
+                await showErrorDialog(
+                  context,
+                  'Catastrofic Error. Please contact support.',
+                );
+                logger.log(e.toString());
               }
             },
             child: const Text('Login'),

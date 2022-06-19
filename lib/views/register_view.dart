@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'dart:developer' as logger show log;
-
 import 'package:noteit/constants/routes.dart';
+import 'package:noteit/views/utilities/show_error_dialog.dart';
+import 'dart:developer' as logger show log;
 
 class RegisterView extends StatefulWidget {
   const RegisterView({Key? key}) : super(key: key);
@@ -56,14 +56,41 @@ class _RegisterViewState extends State<RegisterView> {
                   email: email,
                   password: password,
                 );
+                final user = FirebaseAuth.instance.currentUser;
+                await user?.sendEmailVerification();
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  loginRoute,
+                  (route) => false,
+                );
               } on FirebaseAuthException catch (e) {
                 if (e.code == 'email-already-in-use') {
-                  logger.log(e.code.toString());
+                  await showErrorDialog(
+                    context,
+                    'Invalid credentails.',
+                  );
                 } else if (e.code == 'invalid-email') {
-                  logger.log(e.code.toString());
+                  await showErrorDialog(
+                    context,
+                    'Invalid credentails.',
+                  );
                 } else if (e.code == 'weak-password') {
-                  logger.log(e.code.toString());
+                  await showErrorDialog(
+                    context,
+                    'Weak Password.',
+                  );
+                } else {
+                  await showErrorDialog(
+                    context,
+                    'Auth Error. Please contact support.',
+                  );
+                  logger.log(e.toString());
                 }
+              } catch (e) {
+                await showErrorDialog(
+                  context,
+                  'Catastrofic Error. Please contact support.',
+                );
+                logger.log(e.toString());
               }
             },
             child: const Text('Register'),
